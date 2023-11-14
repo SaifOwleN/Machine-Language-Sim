@@ -1,3 +1,4 @@
+#include <bitset>
 #include <cctype>
 #include <deque>
 #include <fstream>
@@ -38,13 +39,12 @@ public:
 class Instructions {
 public:
   void execute(std::string s, Registers &cpuRegister, MainMemory &ram,
-               int &programCounter) {
+               int &programC) {
 
     char instruction = s[2];
     int reg = s[6] - '0';
     std::string memoryCellHex = s.substr(10);
     int memoryCell = std::stoi(memoryCellHex, nullptr, 16);
-    std::cout << memoryCell << std::endl;
     std::string value;
 
     switch (instruction) {
@@ -64,7 +64,7 @@ public:
 
       value = cpuRegister.read(reg);
       if (memoryCellHex == "00") {
-        std::cout << value;
+        std::cout << "value" << value;
         break;
       } else {
         std::cout << "xdddddMOTS";
@@ -84,17 +84,21 @@ public:
     case '5': {
       int regX = std::stoi(std::string(1, memoryCellHex[0]), nullptr, 16);
       int regY = std::stoi(std::string(1, memoryCellHex[1]), nullptr, 16);
-      break;
+      int valueInRegR = cpuRegister.read(regX) + cpuRegister.read(regY);
+      int regR = reg;
+      cpuRegister.store(regR, valueInRegR) break;
     }
     case 'B': {
+      std::cout << "PC: " << typeid(programC).name() << " "
+                << "memoryCell: " << typeid(memoryCell).name();
       if (cpuRegister.read(reg) == cpuRegister.read(0)) {
-        programCounter = memoryCell;
+        programC = memoryCell;
       }
       value = cpuRegister.read(reg);
       break;
     }
     case 'C': {
-      programCounter = 1000;
+      programC = 1000;
       break;
     }
     }
@@ -116,6 +120,7 @@ public:
 
   void runProgram(MainMemory &ram, Registers &cpuRegister) {
     for (int i = 0; programCounter < 1000; i++) {
+      std::cout << std::endl << programCounter << "||" << std::endl;
       fetch(ram);
       xdd.execute(instructionRegister, cpuRegister, ram, programCounter);
       programCounter += 2;
@@ -158,13 +163,18 @@ public:
     main.runProgram(ram, cpuRegister);
   };
   void printData(std::string userInput) {
-    std::ofstream output("output.txt");
     if (userInput == "memory") {
+      std::ofstream output("ram.txt");
       for (int i = 0; i < 256; i++) {
         output << ram.read(i) << std::endl;
       }
     } else if (userInput == "IR") {
       std::cout << main.getIR() << std::endl;
+    } else {
+      std::ofstream output("Registers.txt");
+      for (int i = 0; i < 16; i++) {
+        output << cpuRegister.read(i) << std::endl;
+      }
     }
   };
 };
@@ -172,9 +182,16 @@ public:
 int main() {
   Machine PC;
   PC.loadFile();
-  std::string userInput;
-  std::cout << "what do u want to print";
-  std::cin >> userInput;
-  PC.printData(userInput);
+
+  while (true) {
+    std::string userInput;
+    std::cout << "what do u want to print or (e) for exit";
+
+    std::cin >> userInput;
+    if (userInput == "e") {
+      break;
+    }
+    PC.printData(userInput);
+  }
   return 0;
 }
