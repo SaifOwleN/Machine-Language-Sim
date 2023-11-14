@@ -1,0 +1,18 @@
+ Machine OwleN
+ {
+    Ram
+    Register
+    CPU
+ }
+ OwleN.loadFile()
+ {
+   file data stored in ram
+ }
+ OwleN.runProgram()
+ {
+   fetch first 2 ram addresses >> decode >> execute with the help of instructions >> store in corresponding Register >> programCounter+=2;
+ }
+ OwleN.outputState()
+ {
+   load what the ran program has done and export it into another text file
+ }
