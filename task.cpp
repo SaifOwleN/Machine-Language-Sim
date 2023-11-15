@@ -1,4 +1,4 @@
-//#include<bits/stdc++.h>
+// #include<bits/stdc++.h>
 #include <bitset>
 #include <cctype>
 #include <deque>
@@ -9,8 +9,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-
 
 std::string hexToBinary(const std::string &hexString) {
   // Convert hexadecimal string to integer
@@ -80,8 +78,10 @@ public:
     size = 256;
     memory.assign(size, "");
   }
-  void store(int address, std::string value) { memory[address] = value; }
-  std::string read(int address) { return memory[address]; }
+  void store(int address, std::string value)  {
+    memory[address] = value;
+  }
+  std::string read(int address)  { return memory[address]; }
 };
 
 class Registers {
@@ -94,14 +94,16 @@ public:
     size = 16;
     memory.assign(size, "00000000");
   }
-  void store(int address, std::string value) { memory[address] = value; }
-  std::string read(int address) { return memory[address]; }
+  void store(int address, std::string value)  {
+    memory[address] = value;
+  }
+  std::string read(int address)  { return memory[address]; }
 };
 
 class Instructions {
 public:
   void execute(std::string s, Registers &cpuRegister, MainMemory &ram,
-               int &programC, std::vector<std::string> &screen) {
+               int &programC, std::vector<std::string> &screen,char &stop) {
     std::string instructionBin = s.substr(0, 4);
     std::string registerBin = s.substr(4, 4);
     std::string memoryCellBin = s.substr(9);
@@ -111,25 +113,21 @@ public:
     int reg = binaryToInt4(registerBin);
 
     int memoryCell = binaryToInt(memoryCellBin);
-    std::cout << instruction << "||";
     std::string value;
 
     switch (instruction) {
     case 1:
-      std::cout << "case1";
 
       value = ram.read(memoryCell);
       cpuRegister.store(reg, value);
       break;
 
     case 2:
-      std::cout << "case2 ";
 
       cpuRegister.store(reg, memoryCellBin);
       break;
 
     case 3:
-      std::cout << "case3 ";
 
       value = cpuRegister.read(reg);
       if (memoryCell == 0) {
@@ -145,12 +143,10 @@ public:
       int regX = binaryToInt4(x);
       int regY = binaryToInt4(y);
       value = cpuRegister.read(regX);
-      std::cout << "message" << std::endl;
       cpuRegister.store(regY, value);
       break;
     }
     case 5: {
-      std::cout << "case5: " << std::endl;
       int regX = binaryToInt4(memoryCellBin.substr(0, 4));
       int regY = binaryToInt4(memoryCellBin.substr(4));
       std::string valueX = cpuRegister.read(regX);
@@ -162,16 +158,14 @@ public:
 
     case 11: {
       if (cpuRegister.read(reg) == cpuRegister.read(0)) {
-        std::cout << programC << "xdd" << std::endl;
         programC = memoryCell - 2;
-        std::cout << programC << std::endl;
         break;
       }
       value = cpuRegister.read(reg);
       break;
     }
     case 12: {
-      programC = 1000;
+      stop ='y';
       break;
     }
     }
@@ -182,6 +176,8 @@ class CPU {
 private:
   int programCounter;
   std::string instructionRegister;
+  char stop;
+
   std::vector<std::string> screen;
   Instructions xdd;
   void fetch(MainMemory &r) {
@@ -189,19 +185,23 @@ private:
         r.read(programCounter) + " " + r.read(programCounter + 1);
   };
 
+
 public:
-  CPU() : programCounter(0), instructionRegister("") {}
+  CPU() : programCounter(0), instructionRegister(""),stop('n') {}
 
   void runProgram(MainMemory &ram, Registers &cpuRegister) {
     for (int i = 0; programCounter < 1000; i++) {
-      std::cout << std::endl
-                << "programCounter: " << programCounter << "||" << std::endl;
       if (programCounter > 254) {
         break;
       }
       fetch(ram);
       xdd.execute(instructionRegister, cpuRegister, ram, programCounter,
-                  screen);
+                  screen,stop);
+      if (stop=='y')
+      {
+        break;
+      }
+      
       programCounter += 2;
     }
   }
@@ -225,13 +225,18 @@ public:
   Machine() {}
 
   void loadFile() {
-    std::string file1 = "machineCode";
+    std::string file1;
     std::cout << "1- load a program" << std::endl;
     std::cout << " " << std::endl;
+    std::cin >> file1;
     std::ifstream file(file1 + ".txt");
     int i = 0;
     std::string line;
     std::vector<std::string> linesPre;
+    if (!file.is_open()) {
+        std::cerr << "Error opening the file!" << std::endl;
+        exit(EXIT_FAILURE);
+    }
     while (std::getline(file, line)) {
       linesPre.push_back(line);
     };
@@ -253,24 +258,35 @@ public:
     for (int i = 0; i < linesAfter.size(); i++) {
       ram.store(i, linesAfter[i]);
     };
-    main.runProgram(ram, cpuRegister);
+    char b;
+    std::cout << "Run the Program (y,n)? ";
+    std::cin >> b;
+    if (b=='y')
+    {
+      main.runProgram(ram,cpuRegister);
+    }else{
+      exit(EXIT_SUCCESS);
+    }
+    
   };
+
+
   void printData(std::string userInput) {
-    if (userInput == "memory") {
+    if (userInput == "1") {
       std::ofstream output("ram.txt");
       for (int i = 0; i < 256; i++) {
         output << ram.read(i) << std::endl;
       }
-    } else if (userInput == "IR") {
-      std::cout << main.getIR() << std::endl;
-    } else if (userInput == "registers") {
+    }else if (userInput == "2") {
       std::ofstream output("Registers.txt");
       for (int i = 0; i < 16; i++) {
         output << cpuRegister.read(i) << std::endl;
       }
-    } else if (userInput == "PC") {
-      std::cout << main.getPC() << std::endl;
-    } else if (userInput == "screen") {
+    } else if (userInput == "3") {
+      std::cout << "Program Counter Stopped at: " << main.getPC() << std::endl;
+    }else if (userInput == "4") {
+      std::cout <<"Instruction Register's last value was: " << main.getIR() << std::endl;
+    }  else if (userInput == "5") {
       main.getScreen();
     }
   };
@@ -282,10 +298,10 @@ int main() {
 
   while (true) {
     std::string userInput;
-    std::cout << "what do u want to print or (e) for exit";
+    std::cout << "What do you want to do: " << std::endl << "1-Memory " << std::endl << "2-Registers" << std::endl << "3-PC" <<std::endl << "4-IR" << std::endl << "5-screen" << std::endl << "e-Exit" << std::endl;
     std::cin >> userInput;
     if (userInput == "e") {
-      break;
+      exit(EXIT_SUCCESS);
     }
     PC.printData(userInput);
   }
