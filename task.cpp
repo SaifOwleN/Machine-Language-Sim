@@ -11,24 +11,18 @@
 #include <vector>
 
 std::string hexToBinary(const std::string &hexString) {
-  // Convert hexadecimal string to integer
   int decimalValue = std::stoi(hexString, nullptr, 16);
 
-  // Convert integer to binary string
   std::bitset<8> binaryValue(decimalValue);
 
-  // Get the binary string
   return binaryValue.to_string();
 }
 
 std::string hexToBinary4(const std::string &hexString) {
-  // Convert hexadecimal string to integer
   int decimalValue = std::stoi(hexString, nullptr, 16);
 
-  // Convert integer to binary string
   std::bitset<4> binaryValue(decimalValue);
 
-  // Get the binary string
   return binaryValue.to_string();
 }
 
@@ -52,10 +46,8 @@ std::string twosComplementAddition(std::string valueX, std::string valueY) {
     bool bitA = binaryX[i];
     bool bitB = binaryY[i];
 
-    // XOR for the sum
     sum[i] = bitA ^ bitB ^ carry;
 
-    // Calculate the carry
     carry = (bitA & bitB) | (carry & (bitA ^ bitB));
   }
 
