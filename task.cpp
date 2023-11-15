@@ -5,8 +5,67 @@
 #include <iostream>
 #include <iterator>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <vector>
+
+std::string hexToBinary(const std::string &hexString) {
+  // Convert hexadecimal string to integer
+  int decimalValue = std::stoi(hexString, nullptr, 16);
+
+  // Convert integer to binary string
+  std::bitset<8> binaryValue(decimalValue);
+
+  // Get the binary string
+  return binaryValue.to_string();
+}
+
+std::string hexToBinary4(const std::string &hexString) {
+  // Convert hexadecimal string to integer
+  int decimalValue = std::stoi(hexString, nullptr, 16);
+
+  // Convert integer to binary string
+  std::bitset<4> binaryValue(decimalValue);
+
+  // Get the binary string
+  return binaryValue.to_string();
+}
+
+unsigned long binaryToInt(const std::string &binaryString) {
+  std::bitset<8> bits(binaryString);
+  return bits.to_ulong();
+}
+
+unsigned long binaryToInt4(const std::string &binaryString) {
+  std::bitset<4> bits(binaryString);
+  return bits.to_ulong();
+}
+
+std::string twosComplementAddition(std::string valueX, std::string valueY) {
+  std::bitset<8> binaryX(valueX);
+  std::bitset<8> binaryY(valueY);
+  std::bitset<8> sum;
+  bool carry = false;
+
+  for (int i = 0; i < 8; ++i) {
+    bool bitA = binaryX[i];
+    bool bitB = binaryY[i];
+
+    // XOR for the sum
+    sum[i] = bitA ^ bitB ^ carry;
+
+    // Calculate the carry
+    carry = (bitA & bitB) | (carry & (bitA ^ bitB));
+  }
+
+  return sum.to_string();
+}
+
+std::string decimalToHex(const int &decimalInteger) {
+  std::stringstream ss;
+  ss << std::hex << decimalInteger;
+  return ss.str();
+}
 
 class MainMemory {
 private:
@@ -40,64 +99,75 @@ class Instructions {
 public:
   void execute(std::string s, Registers &cpuRegister, MainMemory &ram,
                int &programC) {
+    std::string instructionBin = s.substr(0, 4);
+    std::string registerBin = s.substr(4, 4);
+    std::string memoryCellBin = s.substr(9);
 
-    char instruction = s[2];
-    int reg = s[6] - '0';
-    std::string memoryCellHex = s.substr(10);
-    int memoryCell = std::stoi(memoryCellHex, nullptr, 16);
+    int instruction = binaryToInt4(instructionBin);
+
+    int reg = binaryToInt4(registerBin);
+
+    int memoryCell = binaryToInt(memoryCellBin);
+    std::cout << instruction << "||";
     std::string value;
 
     switch (instruction) {
-    case '1':
+    case 1:
+      std::cout << "case1";
+
       value = ram.read(memoryCell);
       cpuRegister.store(reg, value);
-      std::cout << "case1";
       break;
 
-    case '2':
-      cpuRegister.store(reg, std::to_string(memoryCell));
-      std::cout << "case2";
+    case 2:
+      std::cout << "case2 ";
+
+      cpuRegister.store(reg, memoryCellBin);
       break;
 
-    case '3':
-      std::cout << "case3";
+    case 3:
+      std::cout << "case3 ";
 
       value = cpuRegister.read(reg);
-      if (memoryCellHex == "00") {
-        std::cout << "value" << value;
+      if (memoryCell == 0) {
+        std::cout << "register " << reg << ": " << value << std::endl;
         break;
       } else {
-        std::cout << "xdddddMOTS";
         ram.store(memoryCell, value);
         break;
       }
-    case '4': {
-      std::cout << "case4";
-
-      int regX = std::stoi(std::string(1, memoryCellHex[0]), nullptr, 16);
-      int regY = std::stoi(std::string(1, memoryCellHex[1]), nullptr, 16);
+    case 4: {
+      std::string x = memoryCellBin.substr(0, 4);
+      std::string y = memoryCellBin.substr(4);
+      int regX = binaryToInt4(x);
+      int regY = binaryToInt4(y);
       value = cpuRegister.read(regX);
+      std::cout << "message" << std::endl;
       cpuRegister.store(regY, value);
       break;
     }
-
-    case '5': {
-      int regX = std::stoi(std::string(1, memoryCellHex[0]), nullptr, 16);
-      int regY = std::stoi(std::string(1, memoryCellHex[1]), nullptr, 16);
-      int valueInRegR = cpuRegister.read(regX) + cpuRegister.read(regY);
-      int regR = reg;
-      cpuRegister.store(regR, valueInRegR) break;
+    case 5: {
+      std::cout << "case5: " << std::endl;
+      int regX = binaryToInt4(memoryCellBin.substr(0, 4));
+      int regY = binaryToInt4(memoryCellBin.substr(4));
+      std::string valueX = cpuRegister.read(regX);
+      std::string valueY = cpuRegister.read(regY);
+      std::string result = twosComplementAddition(valueX, valueY);
+      cpuRegister.store(reg, result);
+      break;
     }
-    case 'B': {
-      std::cout << "PC: " << typeid(programC).name() << " "
-                << "memoryCell: " << typeid(memoryCell).name();
+
+    case 11: {
       if (cpuRegister.read(reg) == cpuRegister.read(0)) {
-        programC = memoryCell;
+        std::cout << programC << "xdd" << std::endl;
+        programC = memoryCell - 2;
+        std::cout << programC << std::endl;
+        break;
       }
       value = cpuRegister.read(reg);
       break;
     }
-    case 'C': {
+    case 12: {
       programC = 1000;
       break;
     }
@@ -120,10 +190,14 @@ public:
 
   void runProgram(MainMemory &ram, Registers &cpuRegister) {
     for (int i = 0; programCounter < 1000; i++) {
-      std::cout << std::endl << programCounter << "||" << std::endl;
+      std::cout << std::endl
+                << "programCounter: " << programCounter << "||" << std::endl;
       fetch(ram);
       xdd.execute(instructionRegister, cpuRegister, ram, programCounter);
       programCounter += 2;
+      if (programCounter > 256) {
+        break;
+      }
     }
   }
   std::string getIR() { return instructionRegister; }
@@ -151,15 +225,23 @@ public:
       linesPre.push_back(line);
     };
     for (const std::string &str : linesPre) {
-      std::string firstPart = str.substr(0, 7);
-      std::string secondPart = str.substr(8);
-      linesAfter.push_back(firstPart);
-      linesAfter.push_back(secondPart);
+      std::string firstPartHex = str.substr(0, 3);
+      std::string secondPartHex = str.substr(4, 6);
+      std::string thirdPartHex = str.substr(8);
+      std::string firstPartBin = hexToBinary4(firstPartHex);
+      std::string secondPartBin = hexToBinary4(secondPartHex);
+
+      std::string thirdPartBin = hexToBinary(thirdPartHex);
+      std::string firstLine = firstPartBin + secondPartBin;
+      linesAfter.push_back(firstLine);
+      linesAfter.push_back(thirdPartBin);
     };
+    while (linesAfter.size() < 256) {
+      linesAfter.push_back("00000000");
+    }
     for (int i = 0; i < linesAfter.size(); i++) {
       ram.store(i, linesAfter[i]);
     };
-
     main.runProgram(ram, cpuRegister);
   };
   void printData(std::string userInput) {
@@ -186,7 +268,6 @@ int main() {
   while (true) {
     std::string userInput;
     std::cout << "what do u want to print or (e) for exit";
-
     std::cin >> userInput;
     if (userInput == "e") {
       break;
