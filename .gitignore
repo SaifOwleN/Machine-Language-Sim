@@ -1,3 +1,7 @@
 *.exe
 output.txt
 test.txt
+ram.txt
+task.exe
+Registers.txt
+xdd.cpp

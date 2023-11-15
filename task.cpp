@@ -89,7 +89,7 @@ private:
 public:
   Registers() {
     size = 16;
-    memory.assign(size, "");
+    memory.assign(size, "00000000");
   }
   void store(int address, std::string value) { memory[address] = value; }
   std::string read(int address) { return memory[address]; }
@@ -98,7 +98,7 @@ public:
 class Instructions {
 public:
   void execute(std::string s, Registers &cpuRegister, MainMemory &ram,
-               int &programC) {
+               int &programC, std::vector<std::string> &screen) {
     std::string instructionBin = s.substr(0, 4);
     std::string registerBin = s.substr(4, 4);
     std::string memoryCellBin = s.substr(9);
@@ -130,7 +130,7 @@ public:
 
       value = cpuRegister.read(reg);
       if (memoryCell == 0) {
-        std::cout << "register " << reg << ": " << value << std::endl;
+        screen.push_back(value);
         break;
       } else {
         ram.store(memoryCell, value);
@@ -179,6 +179,7 @@ class CPU {
 private:
   int programCounter;
   std::string instructionRegister;
+  std::vector<std::string> screen;
   Instructions xdd;
   void fetch(MainMemory &r) {
     instructionRegister =
@@ -192,15 +193,22 @@ public:
     for (int i = 0; programCounter < 1000; i++) {
       std::cout << std::endl
                 << "programCounter: " << programCounter << "||" << std::endl;
-      fetch(ram);
-      xdd.execute(instructionRegister, cpuRegister, ram, programCounter);
-      programCounter += 2;
-      if (programCounter > 256) {
+      if (programCounter > 254) {
         break;
       }
+      fetch(ram);
+      xdd.execute(instructionRegister, cpuRegister, ram, programCounter,
+                  screen);
+      programCounter += 2;
     }
   }
   std::string getIR() { return instructionRegister; }
+  int getPC() { return programCounter; }
+  void getScreen() {
+    for (std::string line : screen) {
+      std::cout << line << std::endl;
+    };
+  }
 };
 
 class Machine : CPU {
@@ -252,11 +260,15 @@ public:
       }
     } else if (userInput == "IR") {
       std::cout << main.getIR() << std::endl;
-    } else {
+    } else if (userInput == "registers") {
       std::ofstream output("Registers.txt");
       for (int i = 0; i < 16; i++) {
         output << cpuRegister.read(i) << std::endl;
       }
+    } else if (userInput == "PC") {
+      std::cout << main.getPC() << std::endl;
+    } else if (userInput == "screen") {
+      main.getScreen();
     }
   };
 };
